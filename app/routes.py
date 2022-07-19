@@ -4,7 +4,8 @@ import time
 import pytz
 from flask import render_template, flash, redirect, url_for, request, jsonify
 from app import app, db
-from app.forms import LoginForm, BotSettingForm, ResetPasswordRequestForm, ResetPasswordForm, RegistrationForm, FavBetDataForm, UserDataForm, ImitateCasinoGame, ChangePassword, AdminPanelAllUsers
+from app.forms import LoginForm, BotSettingForm, ResetPasswordRequestForm, ResetPasswordForm, RegistrationForm, \
+    FavBetDataForm, UserDataForm, ImitateCasinoGame, ChangePassword, AdminPanelAllUsers
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User
 from werkzeug.urls import url_parse
@@ -17,18 +18,19 @@ from datetime import timedelta
 from app.email import send_password_reset_email
 from user_forms import Forms
 
-#game_state = False
-#bot_state_flag = False
-#final_time = ''
-#bet_adress = ''
-#message_count = -1
-#info_state = ''
+# game_state = False
+# bot_state_flag = False
+# final_time = ''
+# bet_adress = ''
+# message_count = -1
+# info_state = ''
 bot_list = dict()
 params_list = dict()
 forms_dict = dict()
 
-#@user_logged_in.connect_via(app)
-#def on_user_logged_in(sender, user):
+
+# @user_logged_in.connect_via(app)
+# def on_user_logged_in(sender, user):
 #    cnfg.online_users.append(user.username) # or whatever.
 
 @app.route('/')
@@ -48,32 +50,33 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    #Если пользователь уше вошел
+    # Если пользователь уше вошел
     if current_user.is_authenticated:
-        #Перекинуть на домашнюю страницу
+        # Перекинуть на домашнюю страницу
         return redirect(url_for('index'))
-    #Присваивание переменной класса формы Входа
+    # Присваивание переменной класса формы Входа
     form = LoginForm()
-    #При отправке браузером GET запроса возвращает False
-    #При отправке POST запроса возвращает True
+    # При отправке браузером GET запроса возвращает False
+    # При отправке POST запроса возвращает True
     if form.validate_on_submit():
-        #Поиск юзера по никнейму в бд
+        # Поиск юзера по никнейму в бд
         user = User.query.filter_by(username=form.username.data).first()
-        #Если нет юзера или пароль неверный
+        # Если нет юзера или пароль неверный
         if user is None or not user.check_password(form.password.data):
             flash('Неправильный логин или пароль!', 'error')
             return redirect(url_for('login'))
-        #Метод для запоминания вошедшего пользователя
+        # Метод для запоминания вошедшего пользователя
         login_user(user, remember=form.remember_me.data)
-        #Отлавливание в браузере приставки next в строке браузера для перехода на следующую страницу
+        # Отлавливание в браузере приставки next в строке браузера для перехода на следующую страницу
         next_page = request.args.get('next')
-        #Если страницы нет и еще что-то
+        # Если страницы нет и еще что-то
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('index')
         return redirect(next_page)
-    return render_template('login.html', form = form)
+    return render_template('login.html', form=form)
 
-@app.route('/change_password/<username>', methods = ['GET', 'POST'])
+
+@app.route('/change_password/<username>', methods=['GET', 'POST'])
 @login_required
 def change_password(username):
     form = ChangePassword()
@@ -98,20 +101,20 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    #Если пользователь вошел
+    # Если пользователь вошел
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        #Запись в БД введенных данных
+        # Запись в БД введенных данных
         user = User(username=form.username.data,
                     email=form.email.data,
                     favbet_login=form.favbet_login.data,
                     favbet_password=form.favbet_password.data)
         user.set_password(form.password.data)
-        #Добавление данных в сессию
+        # Добавление данных в сессию
         db.session.add(user)
-        #Подтверждение записи в БД
+        # Подтверждение записи в БД
         db.session.commit()
         flash('Поздравляем с регистрацией!', 'success')
         return redirect(url_for('login'))
@@ -136,6 +139,7 @@ def edit_favbet_data(username):
     return render_template('edit_favbet_data.html',
                            form=form,
                            user=user)
+
 
 @app.before_request
 def before_request():
@@ -178,18 +182,20 @@ def stop_game():
         cnfg.online_users.remove(current_user.username)
     if len(cnfg.online_users) == 0:
         cnfg.online_users.append("Нет пользователей онлайн")
-    #index = request.form['index']
-    #if index == '1':
-    #driver = cnfg.add_webdriver(current_user.username)
+    # index = request.form['index']
+    # if index == '1':
+    # driver = cnfg.add_webdriver(current_user.username)
     if cnfg.scheduler.get_job(str(current_user.username) + "_stop"):
         cnfg.scheduler.remove_job(str(current_user.username) + "_stop")
-    if params_list[current_user.username].strategy == '2 раза на цвет' or params_list[current_user.username].strategy == 'Антимартингейл-цвет' or params_list[current_user.username].strategy == 'Средняя0' or params_list[current_user.username].strategy == 'СреднийБлок0':
+    if params_list[current_user.username].strategy == '2 раза на цвет' or params_list[
+        current_user.username].strategy == 'Антимартингейл-цвет' or params_list[
+        current_user.username].strategy == 'Средняя0' or params_list[current_user.username].strategy == 'СреднийБлок0':
         while bot_list[current_user.username].is_last_bet_win == False:
-            #print('Ждем выигрыш')
+            # print('Ждем выигрыш')
             i = 0
     if cnfg.scheduler.get_job(str(current_user.username) + "_run"):
         cnfg.scheduler.remove_job(str(current_user.username) + "_run")
-    #driver.get("https://www.favbet.com")
+    # driver.get("https://www.favbet.com")
     params_list[current_user.username].game_state = not params_list[current_user.username].game_state
     params_list[current_user.username].bot_state_flag = False
     bot_list[current_user.username].reset_all()
@@ -197,12 +203,12 @@ def stop_game():
     params_list[current_user.username].reset_parameters()
     print(cnfg.bet_information_dict[current_user.username])
     user_info = cnfg.user_bot_last_state[current_user.username]
-    #print(user_info[1])
+    # print(user_info[1])
     cnfg.delete_webdriver(current_user.username)
     print('Driver close')
     if stop == True:
         return render_template('no_balance.html',
-                               str = "Недостаточно средств для совершения ставки")
+                               str="Недостаточно средств для совершения ставки")
     else:
         if user_info[1] == 'one_bet':
             cnfg.bet_information_dict[current_user.username].clear()
@@ -214,6 +220,7 @@ def stop_game():
             return render_template('bet_session_results.html',
                                    bet_scheme=user_info[0],
                                    info_list=session_info)
+
 
 @app.route('/instant_stop_game/', methods=['POST'])
 @login_required
@@ -229,14 +236,14 @@ def stop_game_instant():
         cnfg.online_users.remove(current_user.username)
     if len(cnfg.online_users) == 0:
         cnfg.online_users.append("Нет пользователей онлайн")
-    #index = request.form['index']
-    #if index == '1':
-    #driver = cnfg.add_webdriver(current_user.username)
+    # index = request.form['index']
+    # if index == '1':
+    # driver = cnfg.add_webdriver(current_user.username)
     if cnfg.scheduler.get_job(str(current_user.username) + "_stop"):
         cnfg.scheduler.remove_job(str(current_user.username) + "_stop")
     if cnfg.scheduler.get_job(str(current_user.username) + "_run"):
         cnfg.scheduler.remove_job(str(current_user.username) + "_run")
-    #driver.get("https://www.favbet.com")
+    # driver.get("https://www.favbet.com")
     params_list[current_user.username].game_state = not params_list[current_user.username].game_state
     params_list[current_user.username].bot_state_flag = False
     bot_list[current_user.username].reset_all()
@@ -244,12 +251,12 @@ def stop_game_instant():
     params_list[current_user.username].reset_parameters()
     print(cnfg.bet_information_dict[current_user.username])
     user_info = cnfg.user_bot_last_state[current_user.username]
-    #print(user_info[1])
+    # print(user_info[1])
     cnfg.delete_webdriver(current_user.username)
     print('Driver close')
     if stop == True:
         return render_template('no_balance.html',
-                               str = "Недостаточно средств для совершения ставки")
+                               str="Недостаточно средств для совершения ставки")
     else:
         if user_info[1] == 'one_bet':
             cnfg.bet_information_dict[current_user.username].clear()
@@ -262,6 +269,7 @@ def stop_game_instant():
                                    bet_scheme=user_info[0],
                                    info_list=session_info)
 
+
 def stop_game_in_code(username):
     global params_list, bot_list
     stop = ''
@@ -273,18 +281,19 @@ def stop_game_in_code(username):
         cnfg.online_users.remove(username)
     if len(cnfg.online_users) == 0:
         cnfg.online_users.append("Нет пользователей онлайн")
-    #index = request.form['index']
-    #if index == '1':
-    #driver = cnfg.add_webdriver(current_user.username)
+    # index = request.form['index']
+    # if index == '1':
+    # driver = cnfg.add_webdriver(current_user.username)
     if cnfg.scheduler.get_job(str(username) + "_stop"):
         cnfg.scheduler.remove_job(str(username) + "_stop")
-    if params_list[username].strategy == '2 раза на цвет' or params_list[username].strategy == 'Антимартингейл-цвет' or params_list[username].strategy == 'Средняя0' or params_list[username].strategy == 'СреднийБлок0':
+    if params_list[username].strategy == '2 раза на цвет' or params_list[username].strategy == 'Антимартингейл-цвет' or \
+            params_list[username].strategy == 'Средняя0' or params_list[username].strategy == 'СреднийБлок0':
         while bot_list[username].is_last_bet_win == False:
-            #print('Ждем выигрыш')
+            # print('Ждем выигрыш')
             i = 0
     if cnfg.scheduler.get_job(str(username) + "_run"):
         cnfg.scheduler.remove_job(str(username) + "_run")
-    #driver.get("https://www.favbet.com")
+    # driver.get("https://www.favbet.com")
     time.sleep(2)
     params_list[username].game_state = not params_list[username].game_state
     params_list[username].bot_state_flag = False
@@ -293,7 +302,7 @@ def stop_game_in_code(username):
     params_list[username].reset_parameters()
     print(cnfg.bet_information_dict[username])
     user_info = cnfg.user_bot_last_state[username]
-    #print(user_info[1])
+    # print(user_info[1])
     cnfg.delete_webdriver(username)
     print('Driver close')
     cnfg.bet_information_dict[username].clear()
@@ -304,8 +313,8 @@ def stop_game_in_code(username):
 def bot_settings():
     global bot_list, params_list, forms_dict
     param = add_user_parameters(current_user.username)
-    #params_list[current_user.username].reset_parameters()
-    timeobj = dt.time(2,0,0)
+    # params_list[current_user.username].reset_parameters()
+    timeobj = dt.time(2, 0, 0)
     add_user_forms(current_user.username)
     if params_list[current_user.username].game_state == True:
         params_list[current_user.username].game_active = 'disabled'
@@ -313,14 +322,14 @@ def bot_settings():
     else:
         params_list[current_user.username].game_active = 'active'
         params_list[current_user.username].game_disabled = 'disabled'
-    #form = BotSettingForm()
+    # form = BotSettingForm()
     forms_dict[current_user.username].bot = BotSettingForm()
     if forms_dict[current_user.username].bot.validate_on_submit():
-        #forms_dict[current_user.username].bot.bet = form.min_bet.data
+        # forms_dict[current_user.username].bot.bet = form.min_bet.data
         params_list[current_user.username].info_state = forms_dict[current_user.username].bot.bet_info.data
         params_list[current_user.username].middle0_line = forms_dict[current_user.username].bot.middle0_line.data
         params_list[current_user.username].middle0_block = forms_dict[current_user.username].bot.middle0_block.data
-        #forms_dict[current_user.username].bot.time = forms_dict[current_user.username].bot.play_time.data
+        # forms_dict[current_user.username].bot.time = forms_dict[current_user.username].bot.play_time.data
         user = add_user_bot(current_user.username, current_user.favbet_login, current_user.favbet_password)
         if forms_dict[current_user.username].bot.min_bet.data == '4':
             params_list[current_user.username].bet_adress = cnfg.bet_4_bt
@@ -404,11 +413,12 @@ def bot_settings():
                 params_list[current_user.username].middle0_block)
         else:
             params_list[current_user.username].strategy = 'Неопределенный вариант'
-        #id = str(current_user.username) + "_stop"
-        params_list[current_user.username].final_time = datetime.now(pytz.timezone("Europe/Kiev"))+timedelta(hours=forms_dict[current_user.username].bot.play_time.data.hour,
-                                                                                 minutes=forms_dict[current_user.username].bot.play_time.data.minute)
+        # id = str(current_user.username) + "_stop"
+        params_list[current_user.username].final_time = datetime.now(pytz.timezone("Europe/Kiev")) + timedelta(
+            hours=forms_dict[current_user.username].bot.play_time.data.hour,
+            minutes=forms_dict[current_user.username].bot.play_time.data.minute)
         bot_list[current_user.username].id_stop_aps = f"{current_user.username}_stop"
-        #cnfg.scheduler.add_job(stop_game, 'date', run_date=params_list[current_user.username].final_time.strftime("%Y-%m-%d %H:%M:%S"), id=bot_list[current_user.username].id_stop_aps)
+        # cnfg.scheduler.add_job(stop_game, 'date', run_date=params_list[current_user.username].final_time.strftime("%Y-%m-%d %H:%M:%S"), id=bot_list[current_user.username].id_stop_aps)
         cnfg.scheduler.add_job(stop_game_in_code,
                                'interval',
                                hours=forms_dict[current_user.username].bot.play_time.data.hour,
@@ -421,11 +431,11 @@ def bot_settings():
         cnfg.user_bot_last_state[current_user.username] = []
         cnfg.user_bot_last_state[current_user.username].append(params_list[current_user.username].strategy)
         cnfg.user_bot_last_state[current_user.username].append(forms_dict[current_user.username].bot.bet_info.data)
-        #return render_template('index.html', info_state=info_state)
+        # return render_template('index.html', info_state=info_state)
         if bot_list[current_user.username].no_balance_bet == 'На балансе недостаточно средств для ставки':
             return render_template('once_bet_result.html',
-                                   no_balance = bot_list[current_user.username].no_balance_bet,
-                                   user_text = params_list[current_user.username].login_state,
+                                   no_balance=bot_list[current_user.username].no_balance_bet,
+                                   user_text=params_list[current_user.username].login_state,
                                    game_state=params_list[current_user.username].game_state,
                                    info_state=params_list[current_user.username].info_state,
                                    load_data=True,
@@ -440,9 +450,13 @@ def bot_settings():
     elif request.method == 'GET':
         forms_dict[current_user.username].bot.play_time.data = timeobj
         if params_list[current_user.username].game_active == 'active':
-            flash('Загрузка бота может занимать продолжительное время. Оставайтесь на данной странице, по окончанию загрузки вас перенаправит на главную страницу', 'info')
+            flash(
+                'Загрузка бота может занимать продолжительное время. Оставайтесь на данной странице, по окончанию загрузки вас перенаправит на главную страницу',
+                'info')
         if params_list[current_user.username].game_active == 'disabled':
-            flash('При нажатии на кнопку "Остановить", бот прекратит игру, после последней выиграшной ставки. Ожидайте окончания игры и оставайтесь на данной странице', 'error')
+            flash(
+                'При нажатии на кнопку "Остановить", бот прекратит игру, после последней выиграшной ставки. Ожидайте окончания игры и оставайтесь на данной странице',
+                'error')
         if params_list[current_user.username].no_balance_bet == "На балансе недостаточно средств для ставки":
             flash("Бот остановлен. Недостаточно средств для совершения ставки", 'error')
     return render_template('control_panel.html',
@@ -457,19 +471,19 @@ def check_bot_state(username):
     if params_list[username].bot_state_flag == True:
         if params_list[username].no_balance_bet == 'Ставка':
             if username in cnfg.drivers_dict:
-                #str = f"Бот запущен. Баланс: {bot_list[username].check_balance(cnfg.drivers_dict[username])} грн. Игра закроется в {params_list[username].final_time.hour}:{params_list[username].final_time.minute}"
+                # str = f"Бот запущен. Баланс: {bot_list[username].check_balance(cnfg.drivers_dict[username])} грн. Игра закроется в {params_list[username].final_time.hour}:{params_list[username].final_time.minute}"
                 str = f"Бот запущен, Игра закроется в {params_list[username].final_time.strftime('%H:%M')}"
             else:
                 str = "Бот остановлен"
             return str
-        #else:
-            #stop_game()
-            #return "Бот остановлен. Недостаточно средств для совершения ставки"
+        # else:
+        # stop_game()
+        # return "Бот остановлен. Недостаточно средств для совершения ставки"
     else:
         return "Бот остановлен"
 
 
-def start_game(mode, bet_adress, user_bet, username, middle_line = 'middle', middle_block = 'middle'):
+def start_game(mode, bet_adress, user_bet, username, middle_line='middle', middle_block='middle'):
     global start_mode, bot_list
     if "Нет пользователей онлайн" in cnfg.online_users:
         cnfg.online_users.remove("Нет пользователей онлайн")
@@ -488,7 +502,7 @@ def start_game(mode, bet_adress, user_bet, username, middle_line = 'middle', mid
                                                user_bet=user_bet)
     if state == True:
         bot_list[username].set_start_parameters(driver, bet_adress)
-            #    bet_status(driver)
+        #    bet_status(driver)
         print(mode)
         print(user_bet)
         print(username)
@@ -496,22 +510,27 @@ def start_game(mode, bet_adress, user_bet, username, middle_line = 'middle', mid
         cnfg.scheduler.add_job(call_game,
                                'interval',
                                seconds=1,
-                               args=(driver,mode,user_bet,username,params_list[username],bot_list[username],middle_line,middle_block,),
-                               id = bot_list[username].id_run)
+                               args=(
+                               driver, mode, user_bet, username, params_list[username], bot_list[username], middle_line,
+                               middle_block,),
+                               id=bot_list[username].id_run)
         return "Вход выполнен успешно!"
     else:
         stop_game()
         return "Вход не выполнен"
 
 
-def call_game(web, mode, user_bet, username, param: params.UserParameters, user: favbet.BotClass, middle_line, middle_block):
+def call_game(web, mode, user_bet, username, param: params.UserParameters, user: favbet.BotClass, middle_line,
+              middle_block):
     global bot_list, params_list
     if bot_list[username].no_balance_bet == "Ставка":
-        user.check_status(web,mode, user_bet, username, param, middle_line, middle_block)
+        user.check_status(web, mode, user_bet, username, param, middle_line, middle_block)
     params_list[username].no_balance_bet = bot_list[username].no_balance_bet
     '''else:
         stop_games(username)'''
-    #print(user.bet_info_field)
+    # print(user.bet_info_field)
+
+
 '''    with app.test_request_context('/index'):
         if cnfg.no_balance_bet != '':
             flash(cnfg.no_balance_bet, 'error')'''
@@ -531,7 +550,7 @@ def reset_password_request():
         return redirect(url_for('login'))
     return render_template('password_reset_email.html',
                            title='Восстановление пароля',
-                           form = form)
+                           form=form)
 
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
@@ -548,6 +567,7 @@ def reset_password(token):
         flash('Ваш пароль успешно изменен', 'success')
         return redirect(url_for('login'))
     return render_template('password_reset_password.html', form=form)
+
 
 '''@app.route('/update', methods = ['GET', 'POST'])
 def update():
@@ -592,32 +612,37 @@ def update():
     else:
         return ""'''
 
+
 @app.route('/update', methods=['POST'])
 def update():
     global params_list, bot_list
     if current_user.username in cnfg.user_bot_last_state:
-        #user_info = cnfg.user_bot_last_state[current_user.username]
+        # user_info = cnfg.user_bot_last_state[current_user.username]
         params_list[current_user.username].one_bet_info = cnfg.bet_information_dict[current_user.username]
-        if len(params_list[current_user.username].one_bet_info) == 0 and params_list[current_user.username].message_count == -1:
+        if len(params_list[current_user.username].one_bet_info) == 0 and params_list[
+            current_user.username].message_count == -1:
             params_list[current_user.username].message_count += 1
-            if params_list[current_user.username].strategy == '2 раза на цвет' or params_list[current_user.username].strategy == 'Антимартингейл-цвет':
+            if params_list[current_user.username].strategy == '2 раза на цвет' or params_list[
+                current_user.username].strategy == 'Антимартингейл-цвет':
                 return jsonify({'data': render_template('message_template.html',
                                                         str="Бот запущен, информация отобразится после первой ставки")})
-            #elif params_list[current_user.username].strategy == 'Линии' or params_list[current_user.username].strategy == 'Линии3' or params_list[current_user.username].strategy == 'Линии2' or params_list[current_user.username].strategy == 'Средняя0' or params_list[current_user.username].strategy == 'СреднийБлок0':
+            # elif params_list[current_user.username].strategy == 'Линии' or params_list[current_user.username].strategy == 'Линии3' or params_list[current_user.username].strategy == 'Линии2' or params_list[current_user.username].strategy == 'Средняя0' or params_list[current_user.username].strategy == 'СреднийБлок0':
             else:
                 params_list[current_user.username].mass = ["Бот запущен, информация отобразится после первой ставки"]
                 return jsonify({'data': render_template('mass_message_template.html',
-                                                        elements = params_list[current_user.username].mass)})
-        elif params_list[current_user.username].message_count == len(params_list[current_user.username].one_bet_info) - 1:
+                                                        elements=params_list[current_user.username].mass)})
+        elif params_list[current_user.username].message_count == len(
+                params_list[current_user.username].one_bet_info) - 1:
             params_list[current_user.username].message_count += 1
             # bet_info.append('Бот запущен, информация отобразится после первой ставки')
-            if params_list[current_user.username].strategy == '2 раза на цвет' or params_list[current_user.username].strategy == 'Антимартингейл-цвет':
+            if params_list[current_user.username].strategy == '2 раза на цвет' or params_list[
+                current_user.username].strategy == 'Антимартингейл-цвет':
                 return jsonify({'data': render_template('message_template.html',
                                                         str=params_list[current_user.username].one_bet_info[0])})
-            #elif params_list[current_user.username].strategy == 'Линии' or params_list[current_user.username].strategy == 'Линии3' or params_list[current_user.username].strategy == 'Линии2' or params_list[current_user.username].strategy == 'Средняя0':
+            # elif params_list[current_user.username].strategy == 'Линии' or params_list[current_user.username].strategy == 'Линии3' or params_list[current_user.username].strategy == 'Линии2' or params_list[current_user.username].strategy == 'Средняя0':
             else:
                 return jsonify({'data': render_template('mass_message_template.html',
-                                                        elements = params_list[current_user.username].one_bet_info[0])})
+                                                        elements=params_list[current_user.username].one_bet_info[0])})
         else:
             return ""
     else:
@@ -635,19 +660,22 @@ def update_state():
                 })
             else:
                 text = "Ошибка. Бот остановлен. Недостаточно средств для совершения ставки"
-                #flash(text, 'error')
+                # flash(text, 'error')
                 if len(cnfg.bet_information_dict[current_user.username]) == 0:
-                    cnfg.bet_information_dict[current_user.username].append(['Ошибка. Бот остановлен. Недостаточно средств для совершения ставки'])
+                    cnfg.bet_information_dict[current_user.username].append(
+                        ['Ошибка. Бот остановлен. Недостаточно средств для совершения ставки'])
                 else:
-                    if cnfg.bet_information_dict[current_user.username][-1][0] != 'Ошибка. Бот остановлен. Недостаточно средств для совершения ставки':
-                        cnfg.bet_information_dict[current_user.username].insert(0, ['Ошибка. Бот остановлен. Недостаточно средств для совершения ставки'])
+                    if cnfg.bet_information_dict[current_user.username][-1][
+                        0] != 'Ошибка. Бот остановлен. Недостаточно средств для совершения ставки':
+                        cnfg.bet_information_dict[current_user.username].insert(0, [
+                            'Ошибка. Бот остановлен. Недостаточно средств для совершения ставки'])
                 bot_list[current_user.username].is_last_bet_win = True
                 params_list[current_user.username].game_state = False
                 params_list[current_user.username].no_balance_bet = "Ставка"
                 stop_game_in_code(current_user.username)
-                #return render_template('no_balance.html', str = 'На балансе недостаточно средств для ставки')
-                #params_list[current_user.username].login_state = "Вход выполнен успешно!. Не хвататет средств на ставку"
-                #return render_template('bet_session_results.html', bet_scheme="Ошибка. Бот остановлен. Недостаточно средств для совершения ставки")
+                # return render_template('no_balance.html', str = 'На балансе недостаточно средств для ставки')
+                # params_list[current_user.username].login_state = "Вход выполнен успешно!. Не хвататет средств на ставку"
+                # return render_template('bet_session_results.html', bet_scheme="Ошибка. Бот остановлен. Недостаточно средств для совершения ставки")
                 return jsonify({
                     'value': "Бот остановлен. Недостаточно средств для совершения ставки"
                 })
@@ -672,9 +700,9 @@ def bet_session_result():
 def once_bet_result():
     global params_list, bot_list
     if current_user.username in cnfg.bet_information_dict:
-        #params_list[current_user.username].bet_info.clear()
-        #params_list[current_user.username].bet_info = cnfg.bet_information_dict[current_user.username]
-        #params_list[current_user.username].bet_info.reverse()
+        # params_list[current_user.username].bet_info.clear()
+        # params_list[current_user.username].bet_info = cnfg.bet_information_dict[current_user.username]
+        # params_list[current_user.username].bet_info.reverse()
         '''return render_template('once_bet_result.html',
                                mode=params_list[current_user.username].strategy,
                                game_state=params_list[current_user.username].game_state,
@@ -694,11 +722,11 @@ def once_bet_result():
                            strings=cnfg.bet_information_dict[current_user.username])
 
 
-@app.route('/game_simulation_panel', methods=['GET','POST'])
+@app.route('/game_simulation_panel', methods=['GET', 'POST'])
 @login_required
 def game_simulation_panel():
     global forms_dict
-    #form = ImitateCasinoGame()
+    # form = ImitateCasinoGame()
     add_user_forms(current_user.username)
     forms_dict[current_user.username].retro = ImitateCasinoGame()
     strategy_sim = ''
@@ -727,18 +755,20 @@ def game_simulation_panel():
         elif forms_dict[current_user.username].retro.play_schema.data == '8':
             cnfg.retro_dict[current_user.username].strategy = "Средняя линия и блок"
         if forms_dict[current_user.username].retro.mode.data == 'retro':
-            cnfg.retro_dict[current_user.username].result_list = cnfg.retro_dict[current_user.username].retropersp(cnfg.retro_dict[current_user.username].strategy,
-                                                                                                                   int(forms_dict[current_user.username].retro.min_bet.data),
-                                                                                                                   int(forms_dict[current_user.username].retro.game_count.data),
-                                                                                                                   current_user.username,
-                                                                                                                   current_user.favbet_login,
-                                                                                                                   current_user.favbet_password,
-                                                                                                                   forms_dict[current_user.username].retro.middle0_line.data)
+            cnfg.retro_dict[current_user.username].result_list = cnfg.retro_dict[current_user.username].retropersp(
+                cnfg.retro_dict[current_user.username].strategy,
+                int(forms_dict[current_user.username].retro.min_bet.data),
+                int(forms_dict[current_user.username].retro.game_count.data),
+                current_user.username,
+                current_user.favbet_login,
+                current_user.favbet_password,
+                forms_dict[current_user.username].retro.middle0_line.data)
         elif forms_dict[current_user.username].retro.mode.data == 'forecasting':
-            cnfg.retro_dict[current_user.username].result_list = cnfg.retro_dict[current_user.username].forecasting(cnfg.retro_dict[current_user.username].strategy,
-                                                                                                                    int(forms_dict[current_user.username].retro.min_bet.data),
-                                                                                                                    int(forms_dict[current_user.username].retro.game_count.data),
-                                                                                                                    forms_dict[current_user.username].retro.middle0_line.data)
+            cnfg.retro_dict[current_user.username].result_list = cnfg.retro_dict[current_user.username].forecasting(
+                cnfg.retro_dict[current_user.username].strategy,
+                int(forms_dict[current_user.username].retro.min_bet.data),
+                int(forms_dict[current_user.username].retro.game_count.data),
+                forms_dict[current_user.username].retro.middle0_line.data)
         cnfg.retro_dict[current_user.username].result_list.reverse()
         print(cnfg.retro_dict[current_user.username].result_list)
         cnfg.delete_webdriver(current_user.username)
@@ -751,24 +781,25 @@ def game_simulation_panel():
     return render_template('game_simulation_panel.html', form=forms_dict[current_user.username].retro)
 
 
-@app.route('/administrator_panel', methods=['GET','POST'])
+@app.route('/administrator_panel', methods=['GET', 'POST'])
 @login_required
 def admin_panels():
     print(current_user.id)
     print(cnfg.online_users)
-    #cnfg.generate_verification_code()
+    # cnfg.generate_verification_code()
     return render_template('admin_panel.html',
                            verification_code=cnfg.verification_code,
                            users=cnfg.online_users)
 
 
-@app.route('/all_users_panel', methods = ['GET','POST'])
+@app.route('/all_users_panel', methods=['GET', 'POST'])
 @login_required
 def all_users_panel():
     users = User.query.filter(User.username != current_user.username).all()
     return render_template('all_users_panel.html', users=users)
 
-@app.route('/change_user_data_admin/<username>', methods = ['GET', 'POST'])
+
+@app.route('/change_user_data_admin/<username>', methods=['GET', 'POST'])
 def change_user_data_admin(username):
     form = AdminPanelAllUsers()
     user = User.query.filter_by(username=username).first_or_404()
@@ -781,22 +812,21 @@ def change_user_data_admin(username):
     elif request.method == 'GET':
         form.is_active.data = str(user.is_active)
         form.is_admin.data = str(user.is_admin)
-    return render_template('change_user_data_admin.html', username=username, form = form)
-
+    return render_template('change_user_data_admin.html', username=username, form=form)
 
 
 @app.route('/no_balance', methods=['GET', 'POST'])
 def no_balance():
     return render_template('no_balance.html',
-                           str = "Недостаточно средств для совершения ставки")
+                           str="Недостаточно средств для совершения ставки")
 
 
-def add_user_bot(username,favbet_username,favbet_password):
+def add_user_bot(username, favbet_username, favbet_password):
     global bot_list
     if username in bot_list:
         return bot_list[username]
     else:
-        user = favbet.BotClass(username,favbet_username,favbet_password)
+        user = favbet.BotClass(username, favbet_username, favbet_password)
         bot_list[username] = user
         return user
 

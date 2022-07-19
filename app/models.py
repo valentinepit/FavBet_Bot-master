@@ -8,6 +8,7 @@ from time import time
 import jwt
 from app import app
 
+
 class User(UserMixin, db.Model):
     __tablename__ = "users_table"
     id = db.Column(db.Integer, primary_key=True)
@@ -42,6 +43,7 @@ class User(UserMixin, db.Model):
         except:
             return
         return User.query.get(id)
+
 
 @login.user_loader
 def load_user(id):
