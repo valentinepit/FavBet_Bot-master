@@ -18,10 +18,12 @@ from datetime import timedelta
 from app.email import send_password_reset_email
 from user_forms import Forms
 
+from app import m_proc
+
 # game_state = False
 # bot_state_flag = False
 # final_time = ''
-# bet_adress = ''
+# bet_address = ''
 # message_count = -1
 # info_state = ''
 bot_list = dict()
@@ -324,6 +326,10 @@ def bot_settings():
         params_list[current_user.username].game_disabled = 'disabled'
     # form = BotSettingForm()
     forms_dict[current_user.username].bot = BotSettingForm()
+    params_for_bot = [forms_dict[current_user.username].bot.play_schema.data,
+              params_list[current_user.username].bet_address,
+              forms_dict[current_user.username].bot.min_bet.data,
+              current_user.username]
     if forms_dict[current_user.username].bot.validate_on_submit():
         # forms_dict[current_user.username].bot.bet = form.min_bet.data
         params_list[current_user.username].info_state = forms_dict[current_user.username].bot.bet_info.data
@@ -332,85 +338,53 @@ def bot_settings():
         # forms_dict[current_user.username].bot.time = forms_dict[current_user.username].bot.play_time.data
         user = add_user_bot(current_user.username, current_user.favbet_login, current_user.favbet_password)
         if forms_dict[current_user.username].bot.min_bet.data == '4':
-            params_list[current_user.username].bet_adress = cnfg.bet_4_bt
+            params_list[current_user.username].bet_address = cnfg.bet_4_bt
             bot_list[current_user.username].min_bet_int = 4
         elif forms_dict[current_user.username].bot.min_bet.data == '10':
-            params_list[current_user.username].bet_adress = cnfg.bet_10_bt
+            params_list[current_user.username].bet_address = cnfg.bet_10_bt
             bot_list[current_user.username].min_bet_int = 10
         elif forms_dict[current_user.username].bot.min_bet.data == '20':
-            params_list[current_user.username].bet_adress = cnfg.bet_20_bt
+            params_list[current_user.username].bet_address = cnfg.bet_20_bt
             bot_list[current_user.username].min_bet_int = 20
         elif forms_dict[current_user.username].bot.min_bet.data == '100':
-            params_list[current_user.username].bet_adress = cnfg.bet_100_bt
+            params_list[current_user.username].bet_address = cnfg.bet_100_bt
             bot_list[current_user.username].min_bet_int = 100
         elif forms_dict[current_user.username].bot.min_bet.data == '500':
-            params_list[current_user.username].bet_adress = cnfg.bet_500_bt
+            params_list[current_user.username].bet_address = cnfg.bet_500_bt
             bot_list[current_user.username].min_bet_int = 500
         elif forms_dict[current_user.username].bot.min_bet.data == '2000':
-            params_list[current_user.username].bet_adress = cnfg.bet_2000_bt
+            params_list[current_user.username].bet_address = cnfg.bet_2000_bt
             bot_list[current_user.username].min_bet_int = 2000
         if forms_dict[current_user.username].bot.play_schema.data == '1':
             params_list[current_user.username].strategy = '2 раза на цвет'
-            params_list[current_user.username].login_state = start_game(
-                forms_dict[current_user.username].bot.play_schema.data,
-                params_list[current_user.username].bet_adress,
-                forms_dict[current_user.username].bot.min_bet.data,
-                current_user.username)
+            params_list[current_user.username].login_state = m_proc.add_proc(start_game(*params_for_bot))
         elif forms_dict[current_user.username].bot.play_schema.data == '2':
             params_list[current_user.username].strategy = 'Линии'
-            params_list[current_user.username].login_state = start_game(
-                forms_dict[current_user.username].bot.play_schema.data,
-                params_list[current_user.username].bet_adress,
-                forms_dict[current_user.username].bot.min_bet.data,
-                current_user.username)
+            params_list[current_user.username].login_state = m_proc.add_proc(start_game(*params_for_bot))
         elif forms_dict[current_user.username].bot.play_schema.data == '3':
             params_list[current_user.username].strategy = 'Линии3'
             bot_list[current_user.username].lines_2_or_3 = 3
-            params_list[current_user.username].login_state = start_game(
-                forms_dict[current_user.username].bot.play_schema.data,
-                params_list[current_user.username].bet_adress,
-                forms_dict[current_user.username].bot.min_bet.data,
-                current_user.username)
+            params_list[current_user.username].login_state = m_proc.add_proc(start_game(*params_for_bot))
         elif forms_dict[current_user.username].bot.play_schema.data == '4':
             params_list[current_user.username].strategy = 'Линии2'
             bot_list[current_user.username].lines_2_or_3 = 2
-            params_list[current_user.username].login_state = start_game(
-                forms_dict[current_user.username].bot.play_schema.data,
-                params_list[current_user.username].bet_adress,
-                forms_dict[current_user.username].bot.min_bet.data,
-                current_user.username)
+            params_list[current_user.username].login_state = m_proc.add_proc(start_game(*params_for_bot))
         elif forms_dict[current_user.username].bot.play_schema.data == '5':
             params_list[current_user.username].strategy = 'Антимартингейл-цвет'
-            params_list[current_user.username].login_state = start_game(
-                forms_dict[current_user.username].bot.play_schema.data,
-                params_list[current_user.username].bet_adress,
-                forms_dict[current_user.username].bot.min_bet.data,
-                current_user.username)
+            params_list[current_user.username].login_state = m_proc.add_proc(start_game(*params_for_bot))
         elif forms_dict[current_user.username].bot.play_schema.data == '6':
             params_list[current_user.username].strategy = 'Средняя0'
-            params_list[current_user.username].login_state = start_game(
-                forms_dict[current_user.username].bot.play_schema.data,
-                params_list[current_user.username].bet_adress,
-                forms_dict[current_user.username].bot.min_bet.data,
-                current_user.username,
-                params_list[current_user.username].middle0_line)
+            params_for_bot.append(params_list[current_user.username].middle0_line)
+            params_list[current_user.username].login_state = m_proc.add_proc(start_game(*params_for_bot))
         elif forms_dict[current_user.username].bot.play_schema.data == '7':
             params_list[current_user.username].strategy = 'СреднийБлок0'
-            params_list[current_user.username].login_state = start_game(
-                forms_dict[current_user.username].bot.play_schema.data,
-                params_list[current_user.username].bet_adress,
-                forms_dict[current_user.username].bot.min_bet.data,
-                current_user.username,
-                params_list[current_user.username].middle0_block)
+            params_for_bot.append(params_list[current_user.username].middle0_block)
+            params_list[current_user.username].login_state = m_proc.add_proc(start_game(*params_for_bot))
         elif forms_dict[current_user.username].bot.play_schema.data == '8':
             params_list[current_user.username].strategy = 'СредняяЛинияБлок'
-            params_list[current_user.username].login_state = start_game(
-                forms_dict[current_user.username].bot.play_schema.data,
-                params_list[current_user.username].bet_adress,
-                forms_dict[current_user.username].bot.min_bet.data,
-                current_user.username,
-                params_list[current_user.username].middle0_line,
-                params_list[current_user.username].middle0_block)
+            params_for_bot.append(params_list[current_user.username].middle0_line)
+            params_for_bot.append(params_list[current_user.username].middle0_block)
+            params_list[current_user.username].login_state = start_game(*params_for_bot)
         else:
             params_list[current_user.username].strategy = 'Неопределенный вариант'
         # id = str(current_user.username) + "_stop"
@@ -483,13 +457,16 @@ def check_bot_state(username):
         return "Бот остановлен"
 
 
-def start_game(mode, bet_adress, user_bet, username, middle_line='middle', middle_block='middle'):
+def start_game(mode, bet_address, user_bet, username, middle_line='middle', middle_block='middle'):
+    # TODO pick multiprocess here
+
     global start_mode, bot_list
     if "Нет пользователей онлайн" in cnfg.online_users:
         cnfg.online_users.remove("Нет пользователей онлайн")
     if username not in cnfg.online_users:
         cnfg.online_users.append(username)
-    driver = cnfg.add_webdriver(current_user.username)
+    driver = m_proc.get_driver()
+    # driver = cnfg.add_webdriver(current_user.username)
     '''if mode == '1':
         if start_mode == 0:
             favbet.bet_login(cnfg.driver, current_user.favbet_login, current_user.favbet_password)
@@ -501,7 +478,7 @@ def start_game(mode, bet_adress, user_bet, username, middle_line='middle', middl
                                                web_username=username,
                                                user_bet=user_bet)
     if state == True:
-        bot_list[username].set_start_parameters(driver, bet_adress)
+        bot_list[username].set_start_parameters(driver, bet_address)
         #    bet_status(driver)
         print(mode)
         print(user_bet)
@@ -511,8 +488,9 @@ def start_game(mode, bet_adress, user_bet, username, middle_line='middle', middl
                                'interval',
                                seconds=1,
                                args=(
-                               driver, mode, user_bet, username, params_list[username], bot_list[username], middle_line,
-                               middle_block,),
+                                   driver, mode, user_bet, username, params_list[username], bot_list[username],
+                                   middle_line,
+                                   middle_block,),
                                id=bot_list[username].id_run)
         return "Вход выполнен успешно!"
     else:
@@ -665,8 +643,8 @@ def update_state():
                     cnfg.bet_information_dict[current_user.username].append(
                         ['Ошибка. Бот остановлен. Недостаточно средств для совершения ставки'])
                 else:
-                    if cnfg.bet_information_dict[current_user.username][-1][
-                        0] != 'Ошибка. Бот остановлен. Недостаточно средств для совершения ставки':
+                    if cnfg.bet_information_dict[current_user.username][-1][0] != \
+                            'Ошибка. Бот остановлен. Недостаточно средств для совершения ставки':
                         cnfg.bet_information_dict[current_user.username].insert(0, [
                             'Ошибка. Бот остановлен. Недостаточно средств для совершения ставки'])
                 bot_list[current_user.username].is_last_bet_win = True

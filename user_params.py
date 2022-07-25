@@ -3,7 +3,7 @@ class UserParameters:
     game_state = False
     bot_state_flag = False
     final_time = ''
-    bet_adress = ''
+    bet_address = ''
     message_count = -1
     last_res = ''
     info_state = ''
@@ -27,7 +27,7 @@ class UserParameters:
         self.game_state = False
         self.bot_state_flag = False
         self.final_time = ''
-        self.bet_adress = ''
+        self.bet_address = ''
         self.message_count = -1
         self.info_state = ''
         self.strategy = ''

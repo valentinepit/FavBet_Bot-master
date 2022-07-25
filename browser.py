@@ -3,7 +3,7 @@ import random
 import time
 
 import pytz
-from logging import logger
+
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -103,14 +103,14 @@ class BotClass:
         self.middle0_reset()
         self.middle0_block_reset()
 
-    def divide_bet_to_small_numbers(self, numb, sum):
-        self.bet[str(numb)] = sum // numb
-        sum %= numb
-        return sum
+    def divide_bet_to_small_numbers(self, numb, _sum):
+        self.bet[str(numb)] = _sum // numb
+        _sum %= numb
+        return _sum
 
-    def place_bet_from_small_numbers(self, sum):
+    def place_bet_from_small_numbers(self, _sum):
         for elem in self.bets_int:
-            sum = self.divide_bet_to_small_numbers(elem, sum)
+            _sum = self.divide_bet_to_small_numbers(elem, _sum)
 
     def check_status(self, web, mode, user_bet, username, user: params.UserParameters, middle_line, middle_block):
         if mode == '1':
